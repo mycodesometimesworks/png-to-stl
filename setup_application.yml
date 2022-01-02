@@ -14,9 +14,9 @@
     python_packages:
       - pip
       - Pillow
-      - hvac
-      - ansible-modules-hashivault
-      - python-gitlab
+      # - hvac
+      # - ansible-modules-hashivault
+      # - python-gitlab
     project_packages:
       - imagemagick
       - potrace
