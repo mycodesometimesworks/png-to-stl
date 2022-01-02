@@ -8,3 +8,5 @@
 /ansible
 /ansible.cfg
 /setup_ansible.yml
+/demo/output
+/demo/processing
