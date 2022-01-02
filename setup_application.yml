@@ -20,6 +20,7 @@
     project_packages:
       - imagemagick
       - potrace
+      - openscad
     update_python_packages: yes
     virtualenv_path: "{{project_directory}}/venv"
 
