@@ -146,6 +146,18 @@
       - "'nothing to commit, working tree clean' not in commit_message_output.stdout"
     when: git_commit
 
+  - name: git push
+    shell:
+      cmd: "git push"
+      chdir: "{{ project_directory }}"
+    register: push_message_output
+    failed_when:
+      - push_message_output.rc == 1
+      - "'nothing to commit, working tree clean' not in push_message_output.stdout"
+    changed_when:
+      - "'nothing to commit, working tree clean' not in push_message_output.stdout"
+    when: git_commit
+
   - name: show git commit message
     debug:
       msg: "{{ commit_message_output.stdout.split('\n') }}"
