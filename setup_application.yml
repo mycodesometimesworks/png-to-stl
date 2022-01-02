@@ -1,0 +1,155 @@
+---
+- hosts: localhost
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    project_directory: "{{ playbook_dir }}"
+    project_directories:
+      - intake
+      - processing
+      - output
+      - "{{virtualenv_path}}"
+    pngs_to_convert:
+      - path: intake/pg2.png
+        output: output/test.stl
+    python_packages:
+      - pip
+      - Pillow
+      - hvac
+      - ansible-modules-hashivault
+      - python-gitlab
+    project_packages:
+      - imagemagick
+      - potrace
+    update_python_packages: yes
+    virtualenv_path: "{{project_directory}}/venv"
+
+    git_commit: no
+    git_commit_path: '.'
+    git_message: 'pushed by ansible'
+
+  tasks:
+  - name: create ansible project directory
+    file:
+      path: "{{project_directory}}"
+      state: directory
+
+  - name: create project directory
+    file:
+      path: "{{item}}"
+      state: directory
+    with_items: "{{project_directories}}"
+
+  - name: install necessary packages
+    apt:
+      name: "{{project_packages}}"
+      update_cache: yes
+    become: yes
+    when:
+      - project_packages is defined
+
+  - name: check for a requirements file
+    stat:
+      path: "{{ project_directory }}/requirements.txt"
+    register: project_requirements
+
+  - name: install python packages
+    pip:
+      name: "{{python_packages}}"
+      virtualenv: "{{ virtualenv_path }}"
+    when:
+      - python_packages is defined
+      - not project_requirements.stat.exists or update_python_packages
+
+  - name: install python packages from requirements
+    pip:
+      requirements: "{{ project_directory }}/requirements.txt"
+      virtualenv: "{{ virtualenv_path }}"
+    when:
+      - project_requirements.stat.exists
+
+  - name: add venv to gitignore
+    lineinfile:
+      path: .gitignore
+      line: "/{{item}}"
+      create: yes
+    with_items:
+      - "{{project_directories}}"
+
+  - name: set python interpreter
+    set_fact:
+      ansible_python_interpreter: "{{ virtualenv_path }}/bin/python"
+    when:
+      - project_requirements.stat.exists or python_packages is defined
+
+  - name: create requirements file
+    shell:
+      cmd: "{{ virtualenv_path }}/bin/python -m pip freeze > requirements.txt"
+      chdir: "{{ project_directory }}"
+    vars:
+      ansible_python_interpreter: "{{ virtualenv_path }}/bin/python"
+    when: (not project_requirements.stat.exists and python_packages is defined) or update_python_packages
+
+  - name: create startup script
+    copy:
+      content: |
+        source {{ virtualenv_path }}/bin/activate
+      dest: "{{ project_directory }}/start.sh"
+      mode: "0755"
+    when:
+      - project_requirements.stat.exists or python_packages is defined
+
+  - name: add start script to gitignore
+    lineinfile:
+      path: .gitignore
+      line: "{{item}}"
+      create: yes
+    with_items:
+      - "/{{ project_directory }}/start.sh"
+
+  - name: check for git directory
+    stat:
+      path: "{{ project_directory }}/.git"
+    register: git_project
+    when: git_commit
+
+  - name: git init
+    command:
+      cmd: "git init"
+      chdir: "{{ project_directory }}"
+    when: not git_project.stat.exists
+    when: git_commit
+
+  - name: git status
+    command:
+      cmd: "git status"
+      chdir: "{{ project_directory }}"
+    register: commit_status_output
+    changed_when: false
+    when: git_commit
+
+  - name: show git status message
+    debug:
+      msg: "{{ commit_status_output.stdout.split('\n') }}"
+      verbosity: 1
+    when: git_commit
+
+  - name: git commit
+    shell:
+      cmd: "git add {{git_commit_path}} && git commit -m '{{ git_message }}'"
+      chdir: "{{ project_directory }}"
+    register: commit_message_output
+    failed_when:
+      - commit_message_output.rc == 1
+      - "'nothing to commit, working tree clean' not in commit_message_output.stdout"
+    changed_when:
+      - "'nothing to commit, working tree clean' not in commit_message_output.stdout"
+    when: git_commit
+
+  - name: show git commit message
+    debug:
+      msg: "{{ commit_message_output.stdout.split('\n') }}"
+    when: git_commit
+
+  - name: set python interpreter back to system
+    set_fact:
+      ansible_python_interpreter: "/usr/bin/python3"
