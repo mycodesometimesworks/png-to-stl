@@ -11,16 +11,6 @@
     ## rotate units are in degrees
     ## if converting directly from svg, input_png and output_pnm  are optional parameters
     items_to_convert:
-      - output_stl: output/test.stl
-        # input_png: intake/test_text.png
-        # output_pnm: processing/test.pnm
-        output_svg: processing/test.svg
-        stl_height: .2
-        object_outline_diameter: .1
-        x_resize: 100
-        y_resize: 0
-        z_resize: .2
-        z_rotate: 90
       - output_stl: demo/output/calvin_accomplishment.stl
         input_png: demo/intake/apouik1v7lf01.jpg
         output_pnm: demo/processing/calvin_accomplishment.pnm
@@ -28,6 +18,16 @@
         stl_height: .2
         object_outline_diameter: .05
         x_resize: 80
+        y_resize: 0
+        z_resize: .2
+        z_rotate: 90
+      - output_stl: output/test.stl
+        # input_png: intake/test_text.png
+        # output_pnm: processing/test.pnm
+        output_svg: processing/test.svg
+        stl_height: .2
+        object_outline_diameter: .1
+        x_resize: 100
         y_resize: 0
         z_resize: .2
         z_rotate: 90
